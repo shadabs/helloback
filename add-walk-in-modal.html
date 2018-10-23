@@ -1,0 +1,713 @@
+<div class="modal-header">
+    <button type="button" ng-click="close()" class="close" data-dismiss="modal">&times;</button>
+    <h4 class="" id="myModalLabel">Add Walk-in</h4>
+</div>
+<div class="modal-body">
+    <div>
+        <ul class="nav nav-pills flexstart noborderradius">
+
+            <li ng-class="{'active':selectedMainTab === 'patients'}" ng-click="selectedMainTab = 'patients'">
+                <a data-toggle="pill">Patients</a>
+            </li>
+            <li ng-class="{'active':selectedMainTab === 'mr'}" ng-click="selectedMainTab = 'mr'">
+                <a data-toggle="pill">Medical Representatives</a>
+            </li>
+            <li ng-class="{'active':selectedMainTab === 'visitor'}" ng-click="selectedMainTab = 'visitor'">
+                <a data-toggle="pill">Visitors</a>
+            </li>
+            <!-- Will update lastcharge != 0 when opd will work -->
+            <!-- add this once it will get live  ng-class="appointmentObj.patient.lastcharge < 0?'red-amt':(appointmentObj.patient.lastcharge > 0?'yellow-amt':'')" -->
+            <li class="pull-right pendingamtli" ng-class="appointmentObj.patient.extrapaidamt != 0?'red-amt':(appointmentObj.patient.dueamount != 0?'yellow-amt':'')" ng-show="(appointmentObj.patient.extrapaidamt != 0 && appointmentObj.patient.extrapaidamt !== undefined) || (appointmentObj.patient.dueamount != 0 && appointmentObj.patient.dueamount !== undefined)">
+                <!-- <a > -->
+                <span><b>{{appointmentObj.patient.extrapaidamt == 0?'Dues':(appointmentObj.patient.dueamount == 0?'Extra paid':'')}}  :- {{(appointmentObj.patient.dueamount ==0? appointmentObj.patient.extrapaidamt:appointmentObj.patient.dueamount) | currency:'&#8377;' }}</b></span>
+                <!-- </a> -->
+            </li>
+        </ul>
+    </div>
+    <div class="tab-content" ng-show="selectedMainTab === 'patients'">
+        <div>
+            <form class="walkinmodal" name="patientForm" ng-submit="savePatientAppointment();" ng-init="onClinicChanged()">
+                <!-- <form class="walkinmodal" name="patientForm" ng-submit="savePatientAppointment();"> -->
+
+                <div class="row">
+
+                    <div class="margintop input col-sm-12" ng-show="!patientdatashow">
+                        <div class="col-sm-2">
+                            <button class="btn btn-primary disabled">
+                                <img src="img/fingerprint-with-crosshair-focus.png" alt="Download Fingerprint Scanner Application"
+                                    width="50px" height="50px" ng-click="downloadFingerprintFile()" />&nbsp;</button>
+                        </div>
+
+
+                        <div class="col-sm-3">
+                            <div class="input-group">
+                                <select name="clinic" class="form-control col-sm-12" ng-model="selectedClinic" ng-options="clinic as clinic.general.name for clinic in allClincsList track by clinic.general.name" ng-change="clinicChanged()" required>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-sm-3">
+                            <div class="input-group">
+                                <select name="patientType" class="form-control col-sm-12" ng-model="appointmentObj.patient.patientType" ng-change="patientTypeChange(appointmentObj.patient.patientType)" required>
+                                    <option value="">--Select--</option>
+                                    <option value="New">New Patient</option>
+                                    <option value="Old">Old Patient</option>
+                                    <option value="Pre-Appointment">Pre-Appointment</option>
+                                    <option value="VIP">VIP</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-3">
+                            <div class="input-group">
+                                <select name="purposeType" class="form-control" ng-model="appointmentObj.patient.purposeType" ng-change="purposeTypeChange(appointmentObj.patient.purposeType);purposeTypeSelection(appointmentObj.patient.purposeType)" ng-init="appointmentObj.patient.purposeType = ''"
+                                    required>
+                                    <option value="">--Purpose--</option>
+                                    <option value="OPD">OPD</option>
+                                    <option value="IPD">IPD</option>
+                                    <option value="Diagnostic">Diagnostic</option>
+                                    <option value="Dialysis">Dialysis</option>
+                                    <option value="Services">Services</option>
+                                    <option value="Procedures">Procedures</option>
+                                    <option value="Casualty">Casualty</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="margintop input col-sm-12" ng-show="!patientdatashow">
+                        <hr>
+                    </div>
+                    <div class="margintop input col-sm-12" ng-show="!patientdatashow">
+                        <div class="col-sm-2">
+                            <img ng-show="patientSelected" src="{{appointmentObj.patient.profilePic}}" alt="Profile Picture" width="150px" height="150px" class="minimagewidth">
+
+                            <img ng-hide="patientSelected" src="http://placehold.it/150x150" alt="Profile Picture">
+                            <input ng-hide="patientSelected" type="file" name="input1" class="" onchange="angular.element(this).scope().uploadProfilePic(this.files[0])">
+
+
+                        </div>
+
+                        <!-- ng-hide = "sistersList == true" -->
+                        <div class="col-sm-3 height80" ng-show="consultantsList == true" ng-hide="sistersList == true">
+                            <label class="col-sm-12 nopad text-left nomar" for="consutant">Consultant</label>
+                            <div class="input-group">
+                                <select name="consultant" class="form-control" ng-model="appointmentObj.appointmentDetails.consultant" ng-options="consultants.doctor_id as consultants.name for consultants in consultantListInClinic" ng-init="getConsultants(selectedClinic._id)" ng-change="getConsultantTime()"></select>
+                            </div>
+                        </div>
+
+                        <!-- ng-hide = "consultantsList == true" -->
+                        <div class="col-sm-3 height80" ng-show="sistersList == true" ng-hide="sistersList == false">
+                            <label class="col-sm-12 nopad text-left nomar" for="consutant">Sisters</label>
+                            <div class="input-group">
+                                <select name="sister" class="form-control" ng-model="appointmentObj.appointmentDetails.sister" ng-options="sisters._id as sisters.name for sisters in allSistersData"></select>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-3 height80">
+                            <label class="col-sm-12 nopad text-left nomar" for="name">Name</label>
+                            <div class="input-group input80" ng-show="oldPatient == true" ng-hide="oldPatient == false">
+                                <input type="text" ng-model="appointmentObj.patient.name" placeholder="Patient Name" uib-typeahead="first_name as (patient.first_name +' '+ patient.last_name +' ( '+ patient.age +' ) - ' + patient.roles ) for patient in getpatient($viewValue)" typeahead-loading="loadingPatient"
+                                    typeahead-no-results="noResultsforPatient" typeahead-on-select="onPatientSelect($item, $model, $label)" class="form-control" required>
+
+                                <i ng-show="loadingPatient" class="glyphicon glyphicon-refresh"></i>
+                                <div class="flag1" ng-show="isBlackFlagged || isRedFlagged">
+                                    <span class="glyphicon glyphicon-flag red-flag cursor" title="Has been Violent" ng-show="isRedFlagged"></span>
+                                    <span class="glyphicon glyphicon-flag black-flag cursor" title="Has been Non - Payment" ng-show="isBlackFlagged"></span>
+                                </div>
+                                <div ng-show="noResultsforPatient">
+                                    <i class="glyphicon glyphicon-remove"></i> No Results Found
+                                </div>
+                            </div>
+
+                            <div class="input-group input80" ng-show="newPatient == true" ng-hide="newPatient == false">
+                                <input type="text" ng-model="appointmentObj.patient.name" placeholder="New Patient Name" class="form-control" required>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-2 height80">
+                            <label class="col-sm-12 nopad text-left nomar" for="name">Gender</label>
+                            <div class="input-group">
+                                <select name="gender" class="form-control" ng-model="appointmentObj.patient.gender" ng-disabled="patientSelected">
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="transgender">Transgender</option>
+                                    <option value="not specified">Do not want to Specify</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-2 height80">
+                            <label class="col-sm-12 nopad text-left nomar" for="name">Age</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" name="age" ng-model="appointmentObj.patient.age" ng-disabled="patientSelected" required />
+                            </div>
+                        </div>
+                        <br>
+                        <div class="col-sm-3">
+                            <div class="col-sm-8 nopad">
+                                <label class="col-sm-12 nopad text-left nomar" for="name">&nbsp;</label>
+                                <label ng-show="appointmentObj.patient_id" class="cursor col-sm-12 btn btn-primary pull-right" ng-click="showPatientRecord(appointmentObj.patient_id)">
+                                    View Profile </label>
+                            </div>
+                        </div>
+                        <div class="col-sm-3">
+                            <label class="col-sm-12 nopad text-left nomar" for="phone">Phone</label>
+
+                            <div class="input-group">
+                                <input type="number" class="form-control" ng-model="appointmentObj.patient.contactNumber" ng-disabled="patientSelected" required>
+                            </div>
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="col-sm-12 nopad text-left nomar" for="phone">Email Address</label>
+
+                            <div class="input-group">
+                                <input type="email" class="form-control" id="email" ng-model="appointmentObj.patient.email" ng-disabled="patientSelected" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="margintop input col-sm-12" ng-show="!patientdatashow">
+                        <hr>
+                    </div>
+
+                    <div class="margintop input col-sm-6">
+                        <div class="col-sm-12">
+                            <label class="col-sm-12 nopad text-left nomar" for="name">Remarks</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="reason" ng-model="appointmentObj.reason" ng-init="appointmentObj.reason=(patientdatashow?'Appointment booked through online version':'')" required />
+                            </div>
+                        </div>
+                        <div class="col-sm-4" ng-show="!patientdatashow">
+                            <label class="col-sm-12 nopad text-left nomar" for="name">Referred By</label>
+                            <div class="input-group">
+                                <input type="text" ng-model="appointmentObj.patient.referredBy.name" placeholder="Doctor's Name" uib-typeahead="first_name as (doctor.first_name +' '+ doctor.last_name +' ( '+ doctor.age +' ) - ' + doctor.mobile ) for doctor in getDoctorList($viewValue)"
+                                    typeahead-loading="loadingDoctor" typeahead-no-results="noResultsforDoctor" typeahead-on-select="onDoctorSelect($item, $model, $label)" class="form-control">
+
+                                <i ng-show="loadingDoctor" class="glyphicon glyphicon-refresh"></i>
+                                <!-- <div class="flag1" ng-show="isBlackFlagged || isRedFlagged">
+                                    <span class="glyphicon glyphicon-flag red-flag cursor" title="Has been Violent" ng-show="isRedFlagged"></span>
+                                    <span class="glyphicon glyphicon-flag black-flag cursor" title="Has been Non - Payment" ng-show="isBlackFlagged"></span>
+                                </div> -->
+                                <div ng-show="noResultsforDoctor">
+                                    <i class="glyphicon glyphicon-remove"></i> No Results Found
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                    <div class="margintop input col-sm-6">
+                        <div class="col-sm-6">
+                            <label class="col-sm-12 nopad text-left nomar" for="name">Appointment Date</label>
+                            <div class="input-group">
+                                <div class="dropdown">
+                                    <input type="date" class="form-control datepicker" data-date-format="mm/dd/yyyy" ng-model="appointmentObj.appointmentDetails.appointmentDate" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6" ng-show="patientdatashow">
+                            <label class="col-sm-12 nopad text-left nomar" for="name">Purpose</label>
+                            <div class="input-group">
+                                <select name="purposeType" class="form-control" ng-model="appointmentObj.patient.purposeType" ng-change="purposeTypeChange(appointmentObj.patient.purposeType);purposeTypeSelection(appointmentObj.patient.purposeType)" ng-init="appointmentObj.patient.purposeType='OPD'"
+                                    required>
+                                    <option value="">--Purpose--</option>
+                                    <option value="OPD">OPD</option>
+                                    <option value="IPD">IPD</option>
+                                    <option value="Diagnostic">Diagnostic</option>
+                                    <option value="Dialysis">Dialysis</option>
+                                    <option value="Services">Services</option>
+                                    <option value="Procedures">Procedures</option>
+                                    <option value="Casualty">Casualty</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="margintop input col-sm-12">
+                        <hr>
+                    </div>
+
+
+
+                    <!-- <li class="col-sm-12 doc-tabs" ng-class="{'active':selectedTab === 'morning'}" ng-click="selectedTab = 'morning'">
+
+                    <li class="col-sm-12 doc-tabs" ng-class="{'active':selectedTab === 'evening'}" ng-click="selectedTab = 'evening'"> -->
+
+
+                    <div class="appt-time" ng-show="timeSlot == true" ng-hide="timeSlot == false">
+                        <div class="margintop input col-sm-12">
+                            <label class="col-sm-12 nopad text-left nomar" for="name">Select Slot</label>
+                            <ul class="nav nav-pills col-sm-4 noborderradius">
+                                <li class="col-sm-12 doc-tabs active" ng-click="selectedTab('morning'); $event.preventDefault()">
+                                    <a href="#tab1" data-toggle="pill">
+                                        <i class="fa fa-sun-o" aria-hidden="true"></i> Morning Slots</a>
+                                </li>
+                                <li class="col-sm-12 doc-tabs" ng-click="selectedTab('evening');$event.preventDefault()">
+                                    <a href="#tab2" data-toggle="pill">
+                                        <i class="fa fa-moon-o" aria-hidden="true"></i> Evening Slots</a>
+                                </li>
+                            </ul>
+                            <div class="col-sm-3">
+                                <label class="col-sm-12 nopad text-left nomar" for="name">Select TimeSlot</label>
+                                <!-- <div class="input-group" ng-show="morningTab == true" ng-hide="eveningTab == false"> -->
+                                <div class="input-group" ng-show="eveningTab == true" ng-hide="morningTab == false">
+                                    <select class="form-control" name="timeSlot" ng-model='appointmentObj.appointmentTime'>
+                                        <option value="">--Select--</option>
+                                        <option ng-repeat="time in morningSlots" value="{{time.value}}">{{time.label}}</option>
+                                    </select>
+                                </div>
+                                <!-- <div class="input-group" ng-show="eveningTab == true" ng-hide="morningTab == false"> -->
+                                <div class="input-group" ng-show="morningTab == true" ng-hide="eveningTab == false">
+                                    <select class="form-control" name="timeSlot" ng-model='appointmentObj.appointmentTime'>
+                                        <option value="">--Select--</option>
+                                        <option ng-repeat="times in eveningSlots" value="{{times.value}}">{{times.label}}</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="margintop input col-sm-12">
+                        <hr>
+                    </div>
+
+                    <div class="margintop input col-sm-12 martop">
+                        <div class="col-sm-3">
+                            <label class="col-sm-12 nopad text-left nomar" for="name">Reports</label>
+                            <div class="input-group">
+                                <div class="dropdown">
+                                    <input type="file" name="input2" class="" onchange="angular.element(this).scope().uploadReport(this.files[0])">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- <div>
+                            <div class="col-sm-7">
+                                <div class="docsmart-video-holder" ng-if="image_obj.video">
+                                    <webcam channel="channel" on-stream="onStream(stream)" on-access-denied="onError(err)" on-streaming="onSuccess()">
+                                    </webcam>
+                                    <div class="docsmart-snap-image" ng-click="makeSnapshot()">
+                                        <i class="fa fa-2x fa-camera" aria-hidden="true"></i>
+                                    </div>
+                                </div>
+                                <canvas ng-show="image_obj.video_capture" id="snapshot" width="250" height="250"></canvas>
+                                <img ng-if="image_obj.img_placeholder" src="http://placehold.it/250x250 " alt="">
+                                <div id="docsmart-image-container" class="docsmart-max-image-container" ng-if="image_obj.image">
+                                    <img ng-src="{{renderImage}}" ng-class="{'docsmart-margin-top': marginTop}" alt="" class="docsmart-image-holder" />
+                                </div>
+                                <div class="digi-sign-pic">
+                                    <span>
+                                        <input type="file" name="input2" ng-model="uploadFile" onchange="angular.element(this).scope().file_changed(this)">
+                                      </span>
+                                    <span class="snap">
+                                        <button class="resizedButton col-sm-2 btn-snap" ng-click="snap_image()">
+                                          Snap
+                                        </button>
+                                      </span>
+                                    <span ng-show="showImageValidError">
+                                        Please select an image
+                                      </span>
+                                </div>
+                            </div>
+                        </div> -->
+
+                <div class="col-sm-12 buttonsflex">
+                    <button type="submit" class="resizedButton">Add</button>
+                    <button type="button" class="resizedButton" ng-click="close();">Close</button>
+                </div>
+
+            </form>
+        </div>
+    </div>
+    <div class="tab-content" ng-show="selectedMainTab === 'visitor'">
+        <div>
+            <!-- <form class="walkinmodal" name="visitorForm" class="bordertopform" ng-submit="saveVisitorAppointment();" ng-init="onClinicChanged()"> -->
+            <form class="walkinmodal" name="visitorForm" class="bordertopform" ng-submit="saveVisitorAppointment();">
+
+                <div class="row">
+                    <div class="margintop input col-sm-12" ng-show="patientdatashow">
+                        <div class="col-sm-6">
+                            <label class="col-sm-12 nopad text-left nomar" for="name">&nbsp;</label>
+                            <div class="input-group">
+                                <select name="clinic" class="form-control" ng-model="selectedClinic" ng-options="clinic as clinic.general.name for clinic in allClincsList track by clinic.general.name" ng-change="clinicVisitorChanged()" required>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="col-sm-12 nopad text-left nomar" for="name">Name</label>
+                            <div class="input-group">
+                                <select name="consultant" class="form-control" ng-model="visitorAppointmentObj.appointmentDetails.consultant" ng-options="consultants.doctor_id as consultants.name for consultants in consultantListInClinic" ng-init="getVisitorConsultants(selectedClinic._id)"
+                                    ng-change="getVisitorConsultantTime()" required></select>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="margintop input col-sm-12" ng-show="patientdatashow">
+                        <hr>
+                    </div>
+                    <div class="margintop input col-sm-12" ng-show="patientdatashow">
+                        <div class="col-sm-2">
+                            <img ng-show="patientSelected" src="{{visitorAppointmentObj.patient.profilePic}}" alt="Profile Picture" width="150px" height="150px" class="minimagewidth">
+
+                            <img ng-hide="patientSelected" src="http://placehold.it/150x150" alt="Profile Picture">
+                            <input ng-hide="patientSelected" type="file" name="input1" class="" onchange="angular.element(this).scope().uploadProfilePic(this.files[0])">
+
+                            <!-- <div class="box1">
+                                <input type="file" name="file-5[]" id="file-5" class="inputfile inputfile-4" data-multiple-caption="{count} files selected" multiple />
+                                <label for="file-5"><i class="fa fa-plus" aria-hidden="true"></i><span>Add File&hellip;</span></label>
+                            </div> -->
+                        </div>
+
+                        <!-- <div class="form-group row width">
+                            <div class="col-sm-12">
+                                <label for="address">Clinic Address</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <input type="text" class="resizedTextbox" ng-model="visitorAppointmentObj.patient.addrFirstLine" required>
+                            </div>
+                        </div> -->
+
+
+                        <div class="col-sm-4 height80">
+                            <label class="col-sm-12 nopad text-left nomar" for="consutant">Name</label>
+                            <div class="input-group input80">
+                                <input type="text" ng-model="visitorAppointmentObj.patient.name" placeholder="Visitor Name" uib-typeahead="first_name as (patient.first_name +' '+ patient.last_name +' ( '+ patient.age +' ) - ' + patient.mobile ) for patient in getpatient($viewValue)"
+                                    typeahead-loading="loadingVisitor" typeahead-no-results="noResultsforVisitor" typeahead-on-select="onVisitorSelect($item, $model, $label)" class="form-control" required>
+                                <i ng-show="loadingVisitor" class="glyphicon glyphicon-refresh"></i>
+
+                                <div class="flag1" ng-show="isBlackFlagged || isRedFlagged">
+
+                                    <span class="glyphicon glyphicon-flag red-flag cursor" title="Has been Violent" ng-show="isRedFlagged"></span>
+                                    <span class="glyphicon glyphicon-flag black-flag cursor" title="Has been Non - Payment" ng-show="isBlackFlagged"></span>
+                                </div>
+                                <div ng-show="noResultsforVisitor">
+                                    <i class="glyphicon glyphicon-remove"></i> No Results Found
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-2 height80">
+                            <label class="col-sm-12 nopad text-left nomar" for="consutant">Gender</label>
+                            <div class="input-group">
+                                <select name="gender" class="form-control" ng-model="visitorAppointmentObj.patient.gender" ng-disabled="patientSelected">
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="transgender">Transgender</option>
+                                    <option value="not specified">Not specified</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-2 height80">
+                            <label class="col-sm-12 nopad text-left nomar" for="consutant">Age</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" name="age" ng-model="visitorAppointmentObj.patient.age" ng-disabled="patientSelected" required />
+                            </div>
+                        </div>
+                        <br>
+
+                        <div class="col-sm-3">
+
+                            <div class="col-sm-8 nopad">
+                                <label class="col-sm-12 nopad text-left nomar" for="name">&nbsp;</label>
+                                <label ng-show="visitorAppointmentObj.patient_id" class="cursor col-sm-12 btn btn-primary pull-right" ng-click="showPatientRecord(visitorAppointmentObj.patient_id)">
+                                    View Profile </label>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-3">
+                            <label class="col-sm-12 nopad text-left nomar" for="phone">Phone</label>
+
+                            <div class="input-group">
+                                <input type="number" class="form-control" ng-model="visitorAppointmentObj.patient.contactNumber" ng-disabled="patientSelected" required>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-4">
+                            <label class="col-sm-12 nopad text-left nomar" for="phone">Email Address</label>
+
+                            <div class="input-group">
+                                <input type="email" class="form-control" id="email" ng-model="visitorAppointmentObj.patient.email" ng-disabled="patientSelected" required>
+                            </div>
+                        </div>
+
+                    </div>
+
+
+                    <div class="margintop input col-sm-12" ng-show="patientdatashow">
+                        <hr>
+                    </div>
+
+
+                    <div class="margintop input col-sm-12">
+                        <div class="col-sm-6">
+                            <label class="col-sm-12 nopad text-left nomar" for="name">Reason</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="reason" ng-model="visitorAppointmentObj.reason" required>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label class="col-sm-12 nopad text-left nomar" for="name">Company</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="company" ng-model="visitorAppointmentObj.appointmentDetails.companyName">
+                            </div>
+                        </div>
+
+                        <div class="col-sm-3">
+                            <label class="col-sm-12 nopad text-left nomar" for="name">Appointment Date</label>
+                            <div class="input-group">
+                                <div class="dropdown">
+                                    <input type="date" class="form-control datepicker" data-date-format="mm/dd/yyyy" ng-model="visitorAppointmentObj.appointmentDetails.appointmentDate" required>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+
+                    <div class="margintop input col-sm-12">
+                        <hr>
+                    </div>
+
+                    <div class="appt-time">
+                        <div class="margintop input col-sm-12">
+                            <label class="col-sm-12 nopad text-left nomar" for="name">Select Slot</label>
+                            <ul class="nav nav-pills col-sm-4">
+                                <li class="col-sm-12 doc-tabs" ng-class="{'active':selectedTab === 'morning'}" ng-click="selectedTab = 'morning'">
+                                    <a href="#tab1" data-toggle="pill">
+                                        <i class="fa fa-sun-o" aria-hidden="true"></i> Morning Slots</a>
+                                </li>
+                                <li class="col-sm-12 doc-tabs" ng-class="{'active':selectedTab === 'evening'}" ng-click="selectedTab = 'evening'">
+                                    <a href="#tab2" data-toggle="pill">
+                                        <i class="fa fa-moon-o" aria-hidden="true"></i> Evening Slots</a>
+                                </li>
+                            </ul>
+                            <div class="col-sm-3">
+                                <label class="col-sm-12 nopad text-left nomar" for="name">Select TimeSlot</label>
+                                <div class="input-group" ng-if="selectedTab == 'morning'">
+                                    <select class="form-control" name="timeSlot" ng-model='visitorAppointmentObj.appointmentTime' required>
+                                        <option value="">--Select--</option>
+                                        <option ng-repeat="time in morningSlots" value="{{time.value}}">{{time.label}}</option>
+                                    </select>
+                                </div>
+                                <div class="input-group" ng-if="selectedTab == 'evening'">
+                                    <select class="form-control" name="timeSlot" ng-model='visitorAppointmentObj.appointmentTime' required>
+                                        <option value="">--Select--</option>
+                                        <option ng-repeat="times in eveningSlots" value="{{times.value}}">{{times.label}}</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
+
+                    <div class="col-sm-12 buttonsflex">
+                        <button type="submit" class="resizedButton">Add</button>
+                        <button type="button" class="resizedButton" ng-click="close();">Close</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="tab-content" ng-show="selectedMainTab === 'mr'">
+        <div>
+            <!-- <form class="walkinmodal" name="mrForm" class="bordertopform" ng-submit="saveMRAppointment();" ng-init="onClinicChanged()"> -->
+            <form class="walkinmodal" name="mrForm" class="bordertopform" ng-submit="saveMRAppointment();">
+                <div class="row">
+
+                    <div class="margintop input col-sm-12" ng-show="patientdatashow">
+                        <div class="col-sm-6">
+                            <label class="col-sm-12 nopad text-left nomar" for="name">&nbsp;</label>
+                            <div class="input-group">
+                                <select name="clinic" class="form-control" ng-model="selectedClinic" ng-options="clinic as clinic.general.name for clinic in allClincsList track by clinic.general.name" ng-change="clinicMRChanged()" required>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="col-sm-12 nopad text-left nomar" for="name">Consultant</label>
+                            <div class="input-group">
+                                <!-- <select name="consultant" class="form-control" ng-model="mrAppointmentObj.appointmentDetails.consultant" ng-options="consultants.doctor_id as consultants.name for consultants in consultantListInClinic"
+                                    ng-init="getConsultants(selectedClinic._id)" ng-change="getConsultantTime()" required></select> -->
+                                <select name="consultant" class="form-control" ng-model="mrAppointmentObj.appointmentDetails.consultant" ng-options="consultants.doctor_id as consultants.name for consultants in consultantListInClinic" ng-change="getConsultantTime()" required></select>
+                            </div>
+                        </div>
+
+
+                    </div>
+
+
+                    <div class="margintop input col-sm-12" ng-show="patientdatashow">
+                        <div class="col-sm-2">
+                            <img ng-show="patientSelected" src="{{mrAppointmentObj.patient.profilePic}}" alt="Profile Picture" width="150px" height="150px" class="minimagewidth">
+
+                            <img ng-hide="patientSelected" src="http://placehold.it/150x150" alt="Profile Picture">
+                            <input ng-hide="patientSelected" type="file" name="input1" class="" onchange="angular.element(this).scope().uploadProfilePic(this.files[0])">
+
+
+                        </div>
+
+                        <div class="col-sm-4 height80">
+                            <label class="col-sm-12 nopad text-left nomar" for="consutant">Name</label>
+                            <div class="input-group input80">
+                                <input type="text" ng-model="mrAppointmentObj.patient.name" placeholder="Visitor Name" uib-typeahead="first_name as (patient.first_name +' '+ patient.last_name +' ( '+ patient.age +' ) - ' + patient.mobile ) for patient in getpatient($viewValue)" typeahead-loading="loadingMR"
+                                    typeahead-no-results="noResultsforMR" typeahead-on-select="onMRPatientSelect($item, $model, $label)" class="form-control" required>
+                                <i ng-show="loadingMR" class="glyphicon glyphicon-refresh"></i>
+                                <div class="flag1" ng-show="isBlackFlagged || isRedFlagged">
+                                    <span class="glyphicon glyphicon-flag red-flag cursor" title="Has been Violent" ng-show="isRedFlagged"></span>
+                                    <span class="glyphicon glyphicon-flag black-flag cursor" title="Has been Non - Payment" ng-show="isBlackFlagged"></span>
+                                </div>
+                                <div ng-show="noResultsforMR">
+                                    <i class="glyphicon glyphicon-remove"></i> No Results Found
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div class="col-sm-2 height80">
+                            <label class="col-sm-12 nopad text-left nomar" for="consutant">Gender</label>
+                            <div class="input-group">
+                                <select name="gender" class="form-control" ng-model="mrAppointmentObj.patient.gender" ng-disabled="patientSelected">
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="transgender">Transgender</option>
+                                    <option value="not specified">Not specified</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-2 height80">
+                            <label class="col-sm-12 nopad text-left nomar" for="consutant">Age</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" name="age" ng-model="mrAppointmentObj.patient.age" ng-disabled="patientSelected" required />
+                            </div>
+                        </div>
+                        <br>
+                        <div class="col-sm-3">
+                            <div class="col-sm-4" ng-show="isBlackFlagged || isRedFlagged">
+                                <label class="col-sm-12 nopad text-left nomar" for="name">&nbsp;</label>
+                                <span class="glyphicon glyphicon-flag red-flag cursor" title="Has been Violent" ng-show="isRedFlagged"></span>
+                                <span class="glyphicon glyphicon-flag black-flag cursor" title="Has been Non - Payment" ng-show="isBlackFlagged"></span>
+                            </div>
+                            <div class="col-sm-8 nopad">
+                                <label class="col-sm-12 nopad text-left nomar" for="name">&nbsp;</label>
+                                <label ng-show="mrAppointmentObj.patient_id" class="cursor col-sm-12 btn btn-primary pull-right" ng-click="showPatientRecord(mrAppointmentObj.patient_id)">
+                                    View Profile </label>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-3">
+                            <label class="col-sm-12 nopad text-left nomar" for="phone">Phone</label>
+
+                            <div class="input-group">
+                                <input type="number" class="form-control" ng-model="mrAppointmentObj.patient.contactNumber" ng-disabled="patientSelected" required>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-4">
+                            <label class="col-sm-12 nopad text-left nomar" for="phone">Email Address</label>
+
+                            <div class="input-group">
+                                <input type="email" class="form-control" id="email" ng-model="mrAppointmentObj.patient.email" ng-disabled="patientSelected" required>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="margintop input col-sm-12" ng-show="patientdatashow">
+                        <hr>
+                    </div>
+
+
+                    <!-- <div class="form-group row width">
+                    <div class="col-sm-12">
+                        <label for="address">Clinic Address</label>
+                    </div>
+                    <div class="col-sm-9">
+                        <input type="text" class="form-control" ng-model="mrAppointmentObj.patient.addrFirstLine" required>
+                    </div>
+                </div> -->
+
+
+                    <div class="margintop input col-sm-12">
+                        <div class="col-sm-6">
+                            <label class="col-sm-12 nopad text-left nomar" for="name">Reason</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="reason" ng-model="mrAppointmentObj.reason" required>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <label class="col-sm-12 nopad text-left nomar" for="name">Company</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="company" ng-model="mrAppointmentObj.appointmentDetails.companyName">
+                            </div>
+                        </div>
+
+                        <div class="col-sm-3">
+                            <label class="col-sm-12 nopad text-left nomar" for="name">Division</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" name="division" ng-model="mrAppointmentObj.appointmentDetails.division" required>
+                            </div>
+                        </div>
+
+                        <div class="col-sm-3">
+                            <label class="col-sm-12 nopad text-left nomar" for="name">Appointment Date</label>
+                            <div class="input-group">
+                                <div class="dropdown">
+                                    <input type="date" class="form-control datepicker" data-date-format="mm/dd/yyyy" ng-model="mrAppointmentObj.appointmentDetails.appointmentDate" required>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="margintop input col-sm-12">
+                        <hr>
+                    </div>
+
+                    <div class="appt-time">
+                        <div class="margintop input col-sm-12">
+                            <label class="col-sm-12 nopad text-left nomar" for="name">Select Slot</label>
+                            <ul class="nav nav-pills col-sm-4">
+                                <li class="col-sm-12 doc-tabs" ng-class="{'active':selectedTab === 'morning'}" ng-click="selectedTab = 'morning'">
+                                    <a href="#tab1" data-toggle="pill">Morning Slots</a>
+                                </li>
+                                <li class="col-sm-12 doc-tabs" ng-class="{'active':selectedTab === 'evening'}" ng-click="selectedTab = 'evening'">
+                                    <a href="#tab2" data-toggle="pill">Evening Slots</a>
+                                </li>
+                            </ul>
+
+                            <div class="col-sm-3">
+                                <label class="col-sm-12 nopad text-left nomar" for="name">Select TimeSlot</label>
+                                <div class="input-group" ng-if="selectedTab == 'morning'">
+                                    <select class="form-control" name="timeSlot" ng-model='mrAppointmentObj.appointmentTime' required>
+                                        <option value="">--Select--</option>
+                                        <option ng-repeat="time in morningSlots" value="{{time.value}}">{{time.label}}</option>
+                                    </select>
+                                </div>
+                                <div class="input-group" ng-if="selectedTab == 'evening'">
+                                    <select class="form-control" name="timeSlot" ng-model='mrAppointmentObj.appointmentTime' required>
+                                        <option value="">--Select--</option>
+                                        <option ng-repeat="times in eveningSlots" value="{{times.value}}">{{times.label}}</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                        </div>
+
+
+
+                    </div>
+                    <div class="col-sm-12 buttonsflex">
+                        <button type="submit" class="resizedButton">Add</button>
+                        <button type="button" class="resizedButton" ng-click="close();">Close</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</div>
